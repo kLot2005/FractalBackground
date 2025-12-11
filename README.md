@@ -47,6 +47,3 @@ const fractal = new FractalBackground('my-canvas', {
 });
 ```
 
-## License
-
-MIT
