@@ -3,8 +3,9 @@
  * 
  * A lightweight WebGL library for rendering live fractal backgrounds.
  * 
- * @author 
+ * @author Ka15err
  * @version 1.0.0
+ * @GitHub https://github.com/kLot2005/FractalBackground   
  * @license MIT
  */
 class FractalBackground {
