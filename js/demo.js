@@ -12,7 +12,7 @@ const fractal = new FractalBackground('fractal-canvas', {
     },
     interaction: {
         enabled: true,
-        strength: 1.5 // Вернул нормальное значение
+        strength: 1.5
     },
     animation: {
         speed: 1.5 // Контроль скорости
