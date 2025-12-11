@@ -1,3 +1,8 @@
+/**
+ * Demo Configuration
+ * This file shows how to initialize the FractalBackground library.
+ */
+
 // Initialize the Fractal Background
 const fractal = new FractalBackground('fractal-canvas', {
     colors: {

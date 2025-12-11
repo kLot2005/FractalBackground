@@ -1,6 +1,11 @@
 /**
  * FractalBackground.js
+ * 
  * A lightweight WebGL library for rendering live fractal backgrounds.
+ * 
+ * @author 
+ * @version 1.0.0
+ * @license MIT
  */
 class FractalBackground {
     constructor(canvasId, options = {}) {
