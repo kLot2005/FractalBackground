@@ -8,7 +8,9 @@ body {
     font-family: 'Outfit', sans-serif;
     color: white;
     background-color: #0b0c10;
+    /* Dark premium background */
     overflow: hidden;
+    /* Prevent scrollbars */
     height: 100vh;
     display: flex;
     justify-content: center;
@@ -23,72 +25,48 @@ body {
     top: 0;
     left: 0;
     z-index: 1;
+    /* Behind content */
 }
 
 .content {
     position: relative;
     z-index: 2;
+    /* In front of canvas */
     text-align: center;
     pointer-events: none;
-    max-width: 800px;
-    padding: 0 30px;
 }
 
-.title {
-    font-size: 4.5rem;
-    line-height: 1.2;
-    margin-bottom: 0.5rem;
-    background: linear-gradient(135deg, #e0e0e0, #a0a0a0);
+.content h1 {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+    background: linear-gradient(135deg, #66fcf1, #45a29e);
     -webkit-background-clip: text;
     background-clip: text;
     -webkit-text-fill-color: transparent;
-    text-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
-    letter-spacing: -2px;
+    text-shadow: 0 0 20px rgba(102, 252, 241, 0.3);
 }
 
-.subtitle {
+.content p {
     font-size: 1.5rem;
-    color: #8daab6;
-    margin-bottom: 2.5rem;
-    font-weight: 300;
+    color: #c5c6c7;
+    margin-bottom: 2rem;
 }
 
-.buttons {
+.content button {
     pointer-events: auto;
-    display: flex;
-    gap: 15px;
-    justify-content: center;
-}
-
-.btn {
-    text-decoration: none;
-    padding: 14px 28px;
-    font-size: 1rem;
-    border-radius: 8px;
-    font-weight: 600;
-    transition: all 0.3s ease;
-    display: inline-block;
-}
-
-.btn.primary {
-    background: #ffffff;
+    /* Enable clicks on button */
+    padding: 12px 32px;
+    font-size: 1.2rem;
+    border: none;
+    border-radius: 50px;
+    background: linear-gradient(135deg, #45a29e, #66fcf1);
     color: #0b0c10;
-    box-shadow: 0 4px 15px rgba(255, 255, 255, 0.1);
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-.btn.primary:hover {
+.content button:hover {
     transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(255, 255, 255, 0.2);
-}
-
-.btn.secondary {
-    background: rgba(255, 255, 255, 0.1);
-    color: #ffffff;
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.btn.secondary:hover {
-    background: rgba(255, 255, 255, 0.2);
-    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(102, 252, 241, 0.4);
 }

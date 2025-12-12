@@ -1,189 +1,183 @@
-/**
- * FractalBackground.js
- * 
- * A lightweight WebGL library for rendering live fractal backgrounds.
- * 
- * @author Ka15err
- * @version 1.0.0
- * @GitHub https://github.com/kLot2005/FractalBackground   
- * @license MIT
- */
-class FractalBackground {
-    constructor(canvasId, options = {}) {
-        this.canvas = document.getElementById(canvasId);
-        if (!this.canvas) {
-            console.error(`Canvas with id "${canvasId}" not found.`);
-            return;
-        }
+const canvas = document.getElementById('fractal-canvas');
+const gl = canvas.getContext('webgl');
 
-        this.gl = this.canvas.getContext('webgl');
-        if (!this.gl) {
-            console.error('WebGL not supported');
-            return;
-        }
-
-        // Default Config
-        this.config = {
-            colors: {
-                start: options.colors?.start || [0.05, 0.08, 0.12],
-                end: options.colors?.end || [0.2, 0.5, 0.55]
-            },
-            interaction: {
-                enabled: options.interaction?.enabled !== false,
-                strength: options.interaction?.strength || 1.5
-            },
-            animation: {
-                speed: options.animation?.speed || 1.0
-            }
-        };
-
-        this.mouseX = 0;
-        this.mouseY = 0;
-        this.startTime = Date.now();
-
-        this.init();
-    }
-
-    init() {
-        this.resize();
-        window.addEventListener('resize', () => this.resize());
-
-        if (this.config.interaction.enabled) {
-            document.addEventListener('mousemove', (e) => {
-                this.mouseX = e.clientX;
-                this.mouseY = this.canvas.height - e.clientY;
-            });
-        }
-
-        this.createShaders();
-        this.createBuffer();
-        this.startAnimation();
-    }
-
-    resize() {
-        this.canvas.width = window.innerWidth;
-        this.canvas.height = window.innerHeight;
-        this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
-    }
-
-    createShaders() {
-        const vsSource = `
-            attribute vec2 position;
-            void main() {
-                gl_Position = vec4(position, 0.0, 1.0);
-            }
-        `;
-
-        const fsSource = `
-            precision highp float;
-            uniform vec2 u_resolution;
-            uniform vec2 u_mouse;
-            uniform float u_time;
-            uniform vec3 u_colorStart;
-            uniform vec3 u_colorEnd;
-            uniform float u_speed;
-            uniform float u_strength;
-
-            void main() {
-                vec2 uv = (gl_FragCoord.xy - 0.5 * u_resolution.xy) / u_resolution.y;
-                uv *= 2.5; // Zoom
-
-                // Mouse & Auto movement
-                float time = u_time * u_speed;
-                vec2 auto_anim = vec2(sin(time * 0.3) * 0.1, cos(time * 0.2) * 0.1);
-                vec2 mouse_offset = (u_mouse / u_resolution.xy - 0.5) * u_strength;
-                vec2 c = vec2(-0.8, 0.156) + auto_anim + mouse_offset;
-
-                vec2 z = uv;
-                float iter = 0.0;
-                const float max_iter = 100.0;
-
-                for (float i = 0.0; i < max_iter; i++) {
-                    float x = (z.x * z.x - z.y * z.y) + c.x;
-                    float y = (2.0 * z.x * z.y) + c.y;
-                    z = vec2(x, y);
-                    if (length(z) > 2.0) break;
-                    iter++;
-                }
-
-                float t = iter / max_iter;
-                vec3 color = vec3(0.0);
-                
-                if (iter < max_iter) {
-                     float smooth_val = iter - log2(log2(dot(z,z))) + 4.0;
-                     t = smooth_val / max_iter;
-                     
-                     // Use Uniform Colors
-                     float glow = pow(t, 0.5) * (0.8 + sin(u_time * 0.5) * 0.2);
-                     color = mix(u_colorStart, u_colorEnd, glow);
-                } else {
-                    color = vec3(0.01, 0.01, 0.02); // Void color
-                }
-
-                gl_FragColor = vec4(color, 1.0);
-            }
-        `;
-
-        const vs = this.compileShader(this.gl.VERTEX_SHADER, vsSource);
-        const fs = this.compileShader(this.gl.FRAGMENT_SHADER, fsSource);
-
-        this.program = this.gl.createProgram();
-        this.gl.attachShader(this.program, vs);
-        this.gl.attachShader(this.program, fs);
-        this.gl.linkProgram(this.program);
-        this.gl.useProgram(this.program);
-    }
-
-    compileShader(type, source) {
-        const shader = this.gl.createShader(type);
-        this.gl.shaderSource(shader, source);
-        this.gl.compileShader(shader);
-        if (!this.gl.getShaderParameter(shader, this.gl.COMPILE_STATUS)) {
-            console.error(this.gl.getShaderInfoLog(shader));
-            return null;
-        }
-        return shader;
-    }
-
-    createBuffer() {
-        const buffer = this.gl.createBuffer();
-        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, buffer);
-        this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array([
-            -1, -1, 1, -1, -1, 1,
-            -1, 1, 1, -1, 1, 1,
-        ]), this.gl.STATIC_DRAW);
-
-        const posLoc = this.gl.getAttribLocation(this.program, "position");
-        this.gl.enableVertexAttribArray(posLoc);
-        this.gl.vertexAttribPointer(posLoc, 2, this.gl.FLOAT, false, 0, 0);
-    }
-
-    startAnimation() {
-        const u_res = this.gl.getUniformLocation(this.program, "u_resolution");
-        const u_mouse = this.gl.getUniformLocation(this.program, "u_mouse");
-        const u_time = this.gl.getUniformLocation(this.program, "u_time");
-        const u_colStart = this.gl.getUniformLocation(this.program, "u_colorStart");
-        const u_colEnd = this.gl.getUniformLocation(this.program, "u_colorEnd");
-        const u_speed = this.gl.getUniformLocation(this.program, "u_speed");
-        const u_strength = this.gl.getUniformLocation(this.program, "u_strength");
-
-        const loop = () => {
-            const time = (Date.now() - this.startTime) * 0.001;
-
-            this.gl.uniform2f(u_res, this.canvas.width, this.canvas.height);
-            this.gl.uniform2f(u_mouse, this.mouseX, this.mouseY);
-            this.gl.uniform1f(u_time, time);
-
-            // Pass colors safely
-            this.gl.uniform3fv(u_colStart, this.config.colors.start);
-            this.gl.uniform3fv(u_colEnd, this.config.colors.end);
-
-            this.gl.uniform1f(u_speed, this.config.animation.speed);
-            this.gl.uniform1f(u_strength, this.config.interaction.strength);
-
-            this.gl.drawArrays(this.gl.TRIANGLES, 0, 6);
-            requestAnimationFrame(loop);
-        };
-        loop();
-    }
+if (!gl) {
+    alert('WebGL not supported');
 }
+
+// Fullscreen canvas
+function resizeCanvas() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    gl.viewport(0, 0, canvas.width, canvas.height);
+}
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas();
+
+// Vertex Shader (Simple pass-through)
+const vertexShaderSource = `
+    attribute vec2 position;
+    void main() {
+        gl_Position = vec4(position, 0.0, 1.0);
+    }
+`;
+
+// Fragment Shader (Julia Set Fractal)
+const fragmentShaderSource = `
+    precision highp float;
+    uniform vec2 u_resolution;
+    uniform vec2 u_mouse;
+    uniform float u_time;
+
+    // Convert HSV to RGB for beautiful coloring
+    vec3 hsv2rgb(vec3 c) {
+        vec4 K = vec4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
+        vec3 p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www);
+        return c.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);
+    }
+
+    void main() {
+        vec2 uv = (gl_FragCoord.xy - 0.5 * u_resolution.xy) / u_resolution.y;
+        
+        // Dynamic zoom and pan based on time or interaction
+        uv *= 2.5; // Zoom level
+
+        vec2 mouse = u_mouse / u_resolution.xy;
+        
+        // Base value + dynamic mouse offset
+        // We combine automatic smooth movement with user interaction
+        
+        // 1. Base automatic movement (slow breathing)
+        vec2 auto_anim = vec2(sin(u_time * 0.3) * 0.1, cos(u_time * 0.2) * 0.1);
+        
+        // 2. Mouse influence (offset from center)
+        // If mouse is at 0,0 (start), influence is minimal
+        vec2 mouse_offset = (u_mouse / u_resolution.xy - 0.5) * 1.5;
+        
+        // Combine them: Start at a cool spot (-0.8, 0.156) + Animation + Mouse
+        vec2 c = vec2(-0.8, 0.156) + auto_anim + mouse_offset;
+
+        vec2 z = uv;
+        float iter = 0.0;
+        const float max_iter = 100.0;
+
+        // The Fractal Loop
+        for (float i = 0.0; i < max_iter; i++) {
+            // z = z^2 + c
+            // (x + yi)^2 = x^2 - y^2 + 2xyi
+            float x = (z.x * z.x - z.y * z.y) + c.x;
+            float y = (2.0 * z.x * z.y) + c.y;
+            
+            z = vec2(x, y);
+            
+            // Escape condition: if magnitude > 2, it flies off to infinity
+            if (length(z) > 2.0) break;
+            iter++;
+        }
+
+        // Smooth coloring
+        float t = iter / max_iter;
+        
+        // Color palette based on iteration count
+        vec3 color = vec3(0.0);
+        
+        if (iter < max_iter) {
+             // Interior is black (or dark), exterior gets color
+             // We use log smoothing allows for smoother gradients
+             float smooth_val = iter - log2(log2(dot(z,z))) + 4.0;
+             t = smooth_val / max_iter;
+             
+             // Minimalist Palette
+             // We map the iteration count 't' to a smooth gradient between two colors
+             
+             // Deep dark blue/grey for the base
+             vec3 colorStart = vec3(0.05, 0.08, 0.12);
+             
+             // Muted teal/cyan for the fractal details (less bright)
+             vec3 colorEnd = vec3(0.2, 0.5, 0.55);
+             
+             // Pow function shapes the glow to be more concentrated
+             // Adding a subtle time pulse to the brightness
+             float glow = pow(t, 0.5) * (0.8 + sin(u_time * 0.5) * 0.2);
+             
+             color = mix(colorStart, colorEnd, glow);
+        } else {
+            // Inside the set (Deep Void)
+            color = vec3(0.01, 0.01, 0.02); 
+        }
+
+        gl_FragColor = vec4(color, 1.0);
+    }
+`;
+
+// Helper to compile shaders
+function createShader(gl, type, source) {
+    const shader = gl.createShader(type);
+    gl.shaderSource(shader, source);
+    gl.compileShader(shader);
+    if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+        console.error(gl.getShaderInfoLog(shader));
+        gl.deleteShader(shader);
+        return null;
+    }
+    return shader;
+}
+
+const vertexShader = createShader(gl, gl.VERTEX_SHADER, vertexShaderSource);
+const fragmentShader = createShader(gl, gl.FRAGMENT_SHADER, fragmentShaderSource);
+
+const program = gl.createProgram();
+gl.attachShader(program, vertexShader);
+gl.attachShader(program, fragmentShader);
+gl.linkProgram(program);
+
+if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+    console.error(gl.getProgramInfoLog(program));
+}
+
+// Set up rectangle covering the canvas (2 triangles)
+const positionBuffer = gl.createBuffer();
+gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+const positions = [
+    -1, -1,
+    1, -1,
+    -1, 1,
+    -1, 1,
+    1, -1,
+    1, 1,
+];
+gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW);
+
+const positionAttributeLocation = gl.getAttribLocation(program, "position");
+gl.enableVertexAttribArray(positionAttributeLocation);
+gl.vertexAttribPointer(positionAttributeLocation, 2, gl.FLOAT, false, 0, 0);
+
+gl.useProgram(program);
+
+// Uniform locations
+const resolutionUniformLocation = gl.getUniformLocation(program, "u_resolution");
+const mouseUniformLocation = gl.getUniformLocation(program, "u_mouse");
+const timeUniformLocation = gl.getUniformLocation(program, "u_time");
+
+let mouseX = window.innerWidth / 2;
+let mouseY = window.innerHeight / 2;
+
+document.addEventListener('mousemove', (e) => {
+    mouseX = e.clientX;
+    mouseY = canvas.height - e.clientY; // Flip Y for shader coords
+});
+
+// Animation Loop
+function render(time) {
+    time *= 0.001; // Convert to seconds
+
+    gl.uniform2f(resolutionUniformLocation, canvas.width, canvas.height);
+    gl.uniform2f(mouseUniformLocation, mouseX, mouseY);
+    gl.uniform1f(timeUniformLocation, time);
+
+    gl.drawArrays(gl.TRIANGLES, 0, 6);
+
+    requestAnimationFrame(render);
+}
+
+requestAnimationFrame(render);
